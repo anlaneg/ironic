@@ -586,6 +586,7 @@ def parse_instance_info_capabilities(node):
                        'expected.') % node.uuid)
         raise exception.InvalidParameterValue(error_msg)
 
+    #获取节点的capability
     capabilities = node.instance_info.get('capabilities', {})
     if isinstance(capabilities, six.string_types):
         try:
@@ -763,6 +764,7 @@ def get_disk_label(node):
     return capabilities.get('disk_label')
 
 
+#获取node对应的启动模式(从配置中来的，非主动获取）
 def get_boot_mode_for_deploy(node):
     """Returns the boot mode that would be used for deploy.
 
@@ -831,9 +833,12 @@ def get_pxe_config_template(node):
     :param node: A single Node.
     :returns: The PXE config template file name.
     """
+    #获取cpu架构
     cpu_arch = node.properties.get('cpu_arch')
+    #获取指定cpu架构的配置模板
     config_template = CONF.pxe.pxe_config_template_by_arch.get(cpu_arch)
     if config_template is None:
+        #无模板时，如果是uefi,则用uefi的配置，biso时用biso配置
         if get_boot_mode_for_deploy(node) == 'uefi':
             config_template = CONF.pxe.uefi_pxe_config_template
         else:

@@ -47,11 +47,13 @@ opts = [
                default=10080,
                help=_('Maximum TTL (in minutes) for old master images in '
                       'cache.')),
+    #非uefi启动机器对应的pxe模板
     cfg.StrOpt('pxe_config_template',
                default=os.path.join(
                    '$pybasedir', 'drivers/modules/pxe_config.template'),
                help=_('On ironic-conductor node, template file for PXE '
                       'configuration.')),
+    #采用uefi启动的机器对应的pxe配置模板
     cfg.StrOpt('uefi_pxe_config_template',
                default=os.path.join(
                    '$pybasedir',

@@ -48,11 +48,13 @@ KERNEL_RAMDISK_LABELS = {'deploy': DEPLOY_KERNEL_RAMDISK_LABELS,
 def get_root_dir():
     """Returns the directory where the config files and images will live."""
     if CONF.pxe.ipxe_enabled:
+        #节点的http根
         return CONF.deploy.http_root
     else:
+        #节点的tftp根
         return CONF.pxe.tftp_root
 
-
+#确保node_uui的pxe目录及节点目录存在，权限位合乎配置
 def _ensure_config_dirs_exist(node_uuid):
     """Ensure that the node's and PXE configuration directories exist.
 
@@ -60,16 +62,21 @@ def _ensure_config_dirs_exist(node_uuid):
 
     """
     root_dir = get_root_dir()
+    #节点目录
     node_dir = os.path.join(root_dir, node_uuid)
+    #pxe对应的配置目录（pxelinux.cfg)
     pxe_dir = os.path.join(root_dir, PXE_CFG_DIR_NAME)
     # NOTE: We should only change the permissions if the folder
     # does not exist. i.e. if defined, an operator could have
     # already created it and placed specific ACLs upon the folder
     # which may not recurse downward.
+    #确保node_dir,pxe_dir目录及权限位正确
     for directory in (node_dir, pxe_dir):
         if not os.path.isdir(directory):
+            #创建directory目录
             fileutils.ensure_tree(directory)
             if CONF.pxe.dir_permission:
+                #如果配置有目录权限位，则设置目录权限位
                 os.chmod(directory, CONF.pxe.dir_permission)
 
 
@@ -102,8 +109,10 @@ def _link_ip_address_pxe_configs(task, hex_form):
     :raises: InvalidIPv4Address
 
     """
+    #获取pxe的配置文件,例如pxelinux.cfg/default文件
     pxe_config_file_path = get_pxe_config_file_path(task.node.uuid)
 
+    #当前加入NeutronDHCPApi
     api = dhcp_factory.DHCPFactory().provider
     ip_addrs = api.get_ip_addresses(task)
     if not ip_addrs:
@@ -195,6 +204,7 @@ def get_pxe_config_file_path(node_uuid):
     :returns: The path to the node's PXE configuration file.
 
     """
+    #返回pxe的配置文件（例如pxelinux.cfg/config)
     return os.path.join(get_root_dir(), node_uuid, 'config')
 
 
@@ -222,11 +232,15 @@ def create_pxe_config(task, pxe_options, template=None):
     LOG.debug("Building PXE config for node %s", task.node.uuid)
 
     if template is None:
+        #获取对应node的pxe配置模板
         template = deploy_utils.get_pxe_config_template(task.node)
 
+    #确保节点所需要配置目录及节点目录存在
     _ensure_config_dirs_exist(task.node.uuid)
 
+    #取pxe配置文件路径
     pxe_config_file_path = get_pxe_config_file_path(task.node.uuid)
+    #检查节点是否为uefi启动类型
     is_uefi_boot_mode = (deploy_utils.get_boot_mode_for_deploy(task.node) ==
                          'uefi')
 
@@ -254,6 +268,7 @@ def create_pxe_config(task, pxe_options, template=None):
               'ROOT': pxe_config_root_tag,
               'DISK_IDENTIFIER': pxe_config_disk_ident}
 
+    #通过参数，实例化pxe配置文件，并将其写入对应目录
     pxe_config = utils.render_template(template, params)
     utils.write_to_file(pxe_config_file_path, pxe_config)
 

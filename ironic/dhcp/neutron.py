@@ -129,6 +129,7 @@ class NeutronDHCPApi(base.BaseDHCP):
             LOG.debug("Waiting %d seconds for Neutron.", port_delay)
             time.sleep(port_delay)
 
+    #返回uuid对应的port上的ip地址
     def _get_fixed_ip_address(self, port_uuid, client):
         """Get a Neutron port's fixed ip address.
 
@@ -140,12 +141,14 @@ class NeutronDHCPApi(base.BaseDHCP):
         """
         ip_address = None
         try:
+            #通过uuid查询此port
             neutron_port = client.show_port(port_uuid).get('port')
         except neutron_client_exc.NeutronClientException:
             LOG.exception("Failed to Get IP address on Neutron port %s.",
                           port_uuid)
             raise exception.FailedToGetIPAddressOnPort(port_id=port_uuid)
 
+        #取port的ip地址
         fixed_ips = neutron_port.get('fixed_ips')
 
         # NOTE(faizan) At present only the first fixed_ip assigned to this
@@ -154,6 +157,7 @@ class NeutronDHCPApi(base.BaseDHCP):
         if fixed_ips:
             ip_address = fixed_ips[0].get('ip_address', None)
 
+        #只支持返回ipv4地址
         if ip_address:
             if netutils.is_valid_ipv4(ip_address):
                 return ip_address
@@ -178,6 +182,7 @@ class NeutronDHCPApi(base.BaseDHCP):
         :raises: InvalidIPv4Address
         """
 
+        #取得port uuid
         vif = task.driver.network.get_current_vif(task, p_obj)
         if not vif:
             obj_name = 'portgroup'
@@ -189,9 +194,11 @@ class NeutronDHCPApi(base.BaseDHCP):
                          'obj_id': p_obj.uuid})
             raise exception.FailedToGetIPAddressOnPort(port_id=p_obj.uuid)
 
+        #返回port对应的ip地址
         vif_ip_address = self._get_fixed_ip_address(vif, client)
         return vif_ip_address
 
+    #返回给定pobj_list上对应配置的ip地址
     def _get_ip_addresses(self, task, pobj_list, client):
         """Get IP addresses for all ports/portgroups.
 
@@ -205,13 +212,16 @@ class NeutronDHCPApi(base.BaseDHCP):
         ip_addresses = []
         for obj in pobj_list:
             try:
+                #取obj对应的port上配置的ip地址
                 vif_ip_address = self._get_port_ip_address(task, obj,
                                                            client)
                 ip_addresses.append(vif_ip_address)
             except (exception.FailedToGetIPAddressOnPort,
                     exception.InvalidIPv4Address):
+                    #记录获取ip address失败的port
                     failures.append(obj.uuid)
 
+        #显示失败的port uuid
         if failures:
             obj_name = 'portgroups'
             if isinstance(pobj_list[0], objects.Port):
@@ -226,6 +236,7 @@ class NeutronDHCPApi(base.BaseDHCP):
 
         return ip_addresses
 
+    #返回task.ports,task.portgroups上配置的ip地址
     def get_ip_addresses(self, task):
         """Get IP addresses for all ports/portgroups in `task`.
 
@@ -233,8 +244,10 @@ class NeutronDHCPApi(base.BaseDHCP):
         :returns: List of IP addresses associated with
                   task's ports/portgroups.
         """
+        #构造neutron client
         client = neutron.get_client(context=task.context)
 
+        #返回task.ports,task.portgroups上配置的ip地址
         port_ip_addresses = self._get_ip_addresses(task, task.ports, client)
         portgroup_ip_addresses = self._get_ip_addresses(
             task, task.portgroups, client)

@@ -31,6 +31,7 @@ class DHCPFactory(object):
     _dhcp_provider = None
 
     def __init__(self, **kwargs):
+        #如果未初始化，则初始化_dhcp_provider
         if not DHCPFactory._dhcp_provider:
             DHCPFactory._set_dhcp_provider(**kwargs)
 
@@ -48,8 +49,10 @@ class DHCPFactory(object):
         #                    this lock before _dhcp_provider is initialized,
         #                    prevent creation of multiple DriverManager.
         if cls._dhcp_provider:
+            #多线程时，加锁进入后需要检查是否已初始化，已初始化，而直接退出
             return
 
+        #获取配置的类名称，并将其加载
         dhcp_provider_name = CONF.dhcp.dhcp_provider
         try:
             _extension_manager = stevedore.driver.DriverManager(
@@ -62,6 +65,7 @@ class DHCPFactory(object):
                 dhcp_provider_name=dhcp_provider_name, reason=e
             )
 
+        #加载后，完成其初始化
         cls._dhcp_provider = _extension_manager.driver
 
     def update_dhcp(self, task, dhcp_opts, ports=None):

@@ -276,6 +276,7 @@ def _build_service_pxe_config(task, instance_image_info,
         pxe_options = _build_pxe_config_options(task, instance_image_info,
                                                 service=True)
         pxe_config_template = deploy_utils.get_pxe_config_template(node)
+        #创建pxe文件
         pxe_utils.create_pxe_config(task, pxe_options, pxe_config_template)
     iwdi = node.driver_internal_info.get('is_whole_disk_image')
     deploy_utils.switch_pxe_config(

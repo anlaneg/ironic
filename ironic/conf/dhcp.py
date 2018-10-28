@@ -18,6 +18,7 @@ from oslo_config import cfg
 from ironic.common.i18n import _
 
 opts = [
+    #默认使用neutron
     cfg.StrOpt('dhcp_provider',
                default='neutron',
                help=_('DHCP provider to use. "neutron" uses Neutron, and '
