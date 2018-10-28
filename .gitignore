@@ -39,6 +39,9 @@ AUTHORS
 ChangeLog
 *.sqlite
 *~
+.project
+.pydevproject
+.settings/
 
 # Vagrant
 .vagrant
