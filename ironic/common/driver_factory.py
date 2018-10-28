@@ -249,7 +249,9 @@ def check_and_update_node_interfaces(node, driver_or_hw_type=None):
              fields were specified when they should not be.
     """
     if driver_or_hw_type is None:
+        #获取节点驱动
         driver_or_hw_type = get_driver_or_hardware_type(node.driver)
+    #检查是否为硬件类型
     is_hardware_type = isinstance(driver_or_hw_type,
                                   hardware_type.AbstractHardwareType)
 
@@ -323,6 +325,7 @@ def get_driver_or_hardware_type(name):
     :raises: DriverNotFound if neither hardware type nor classic driver found.
     """
     try:
+        #首先尝试硬件类驱动，再尝试普通driver
         return get_hardware_type(name)
     except exception.DriverNotFound:
         return get_driver(name)
@@ -336,6 +339,7 @@ def get_hardware_type(hardware_type):
     :raises: DriverNotFound if requested hardware type cannot be found
     """
     try:
+        #获取名称为hardware_type硬件驱动
         return HardwareTypesFactory().get_driver(hardware_type)
     except KeyError:
         raise exception.DriverNotFound(driver_name=hardware_type)
@@ -357,6 +361,7 @@ def get_driver(driver_name):
     """
 
     try:
+        #构造factory并返回名称为driver_name的驱动
         factory = DriverFactory()
         return factory.get_driver(driver_name)
     except KeyError:
@@ -372,7 +377,7 @@ def _get_all_drivers(factory):
     return collections.OrderedDict((name, factory[name].obj)
                                    for name in factory.names)
 
-
+#获取所有drivers
 def drivers():
     """Get all drivers.
 
@@ -380,7 +385,7 @@ def drivers():
     """
     return _get_all_drivers(DriverFactory())
 
-
+#返回所有硬件类型
 def hardware_types():
     """Get all hardware types.
 
@@ -420,7 +425,7 @@ def enabled_supported_interfaces(hardware_type):
         mapping[interface_type] = supported
     return mapping
 
-
+#加载配置的驱动
 class BaseDriverFactory(object):
     """Discover, load and manage the drivers available.
 
@@ -446,12 +451,15 @@ class BaseDriverFactory(object):
     _logging_template = "Loaded the following drivers: %s"
 
     def __init__(self):
+        #未初始化_extension_manager，则实始化（单例）
         if not self.__class__._extension_manager:
             self.__class__._init_extension_manager()
 
+    #取指定名称的扩展
     def __getitem__(self, name):
         return self._extension_manager[name]
 
+    #获取名称为name的driver
     def get_driver(self, name):
         return self[name].obj
 
@@ -465,6 +473,7 @@ class BaseDriverFactory(object):
         #             creation of multiple NameDispatchExtensionManagers.
         if cls._extension_manager:
             return
+        #构造extension_manager,直接从配置中获取，名称为
         enabled_drivers = getattr(CONF, cls._enabled_driver_list_config_option,
                                   [])
 
@@ -510,14 +519,15 @@ class BaseDriverFactory(object):
             raise exception.DriverNotFoundInEntrypoint(
                 names=names, entrypoint=cls._entrypoint_name)
 
+        #加载驱动
         cls._extension_manager = (
             named.NamedExtensionManager(
-                cls._entrypoint_name,
-                cls._enabled_driver_list,
+                cls._entrypoint_name,#入口点名称
+                cls._enabled_driver_list,#开启的driver列表
                 invoke_on_load=True,
-                on_load_failure_callback=_catch_driver_not_found,
+                on_load_failure_callback=_catch_driver_not_found,#对加载失败的驱动报错
                 propagate_map_exceptions=True,
-                on_missing_entrypoints_callback=missing_callback))
+                on_missing_entrypoints_callback=missing_callback))#对不存在的points报错
 
         # warn for any untested/unsupported/deprecated drivers or interfaces
         if cls._enabled_driver_list:
@@ -541,11 +551,12 @@ def _warn_if_unsupported(ext):
                     'and may be removed in a future release.', ext.name)
 
 
+#此类默认提供ironic.drivers类型的驱动
 class DriverFactory(BaseDriverFactory):
     _entrypoint_name = 'ironic.drivers'
     _enabled_driver_list_config_option = 'enabled_drivers'
 
-
+#这个类默认提供ironic.hardware.types类型的驱动
 class HardwareTypesFactory(BaseDriverFactory):
     _entrypoint_name = 'ironic.hardware.types'
     _enabled_driver_list_config_option = 'enabled_hardware_types'

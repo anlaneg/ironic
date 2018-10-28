@@ -75,6 +75,7 @@ api_opts = [
 ]
 
 driver_opts = [
+    #通过此选项开启要初始化的driver列表（这个列表默认应是全配置，这样的话，是不是就没有存在的必要？）
     cfg.ListOpt('enabled_drivers',
                 default=['pxe_ipmitool'],
                 help=_('Specify the list of drivers to load during service '
